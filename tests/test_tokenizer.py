@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import os
-import resource
+# import resource
 import sys
 
 import psutil
@@ -17,6 +17,13 @@ MERGES_PATH = FIXTURES_PATH / "gpt2_merges.txt"
 
 
 def memory_limit(max_mem):
+
+    if sys.platform == "win32":
+        # Windows: 无法设置 RLIMIT_AS，直接返回原函数
+        def decorator(f):
+            return f
+        return decorator
+
     def decorator(f):
         def wrapper(*args, **kwargs):
             process = psutil.Process(os.getpid())
