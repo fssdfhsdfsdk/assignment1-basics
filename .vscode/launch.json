@@ -1,0 +1,21 @@
+
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Debug test with uv",
+        "type": "debugpy",
+        "request": "launch",
+        "module": "pytest",
+        "args": [
+          "tests/test_train_bpe.py::test_train_bpe",
+          "-v",
+          "-s"
+        ],
+        "console": "integratedTerminal",
+        "justMyCode": false,
+        "env": {},
+        "python": "${workspaceFolder}\\.venv\\Scripts\\python.exe"  // Windows
+      }
+    ]
+  }
