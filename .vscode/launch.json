@@ -8,7 +8,9 @@
         "request": "launch",
         "module": "pytest",
         "args": [
-          "tests/test_train_bpe.py::test_train_bpe",
+          // "tests/test_train_bpe.py::test_train_bpe",
+          "-k",
+          "test_embedding",
           "-v",
           "-s"
         ],
