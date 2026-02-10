@@ -43,10 +43,45 @@ E           RuntimeError: The size of tensor a (64) must match the size of tenso
 
 [error 01](rsmnorm_error01.md)
 
-## 2、【ok】
+### 2、【ok】
 
 ```
 tests\conftest.py:89: AssertionError
 ```
 
 [error 02](rsmnorm_error02.md)
+
+
+
+## FNN
+
+### 1、【ok】
+
+===
+```
+tests\adapters.py:103: in run_swiglu
+    return swiglu.forward(in_features)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+cs336_basics\transformer.py:99: in forward
+    return self.w2.forward(silu(self.w1.forward(x)) *self.w3.forward(x))
+                                ^^^^^^^^^^^^^^^^^^
+cs336_basics\transformer.py:22: in forward
+    return einsum(x, self.weights, "... d_in,  d_in d_out -> ... d_out")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\einops\einops.py:916: in einsum
+    return get_backend(tensors[0]).einsum(pattern, *tensors)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.venv\Lib\site-packages\einops\_backends.py:288: in einsum
+    return self.torch.einsum(pattern, *x)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+
+E           RuntimeError: einsum(): subscript a has size 128 for operand 1 which does not broadcast with previously seen size 64
+
+```
+===
+
+原因：
+
+测试给定的参数（weight），要先进行转置。

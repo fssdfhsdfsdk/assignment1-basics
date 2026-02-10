@@ -10,7 +10,7 @@ from jaxtyping import Bool, Float, Int
 from torch import Tensor
 
 from cs336_basics.bpe_tokenizer import train_bpe
-from cs336_basics.transformer import Linear, Eebedding, RMSNorm
+from cs336_basics.transformer import Linear, Eebedding, RMSNorm, FNN, RotaryPositionalEmbedding
 
 def run_linear(
     d_in: int,
@@ -61,7 +61,6 @@ def run_embedding(
     embed = Eebedding(vocab_size, d_model)
     with torch.no_grad():
         embed.embed_matrix.copy_(weights)
-
     return embed.forward(token_ids)
     
 
@@ -95,7 +94,16 @@ def run_swiglu(
     # swiglu.w1.weight.data = w1_weight
     # swiglu.w2.weight.data = w2_weight
     # swiglu.w3.weight.data = w3_weight
-    raise NotImplementedError
+
+    swiglu = FNN(d_model)
+    swiglu.w1.weights.data = w1_weight.T
+    swiglu.w2.weights.data = w2_weight.T
+    swiglu.w3.weights.data = w3_weight.T
+
+    return swiglu.forward(in_features)
+
+    # from cs336_basics.transformer import swiglu
+    # return swiglu(w1_weight, w2_weight, w3_weight, in_features)
 
 
 def run_scaled_dot_product_attention(
@@ -116,7 +124,9 @@ def run_scaled_dot_product_attention(
     Returns:
         Float[Tensor, " ... queries d_v"]: Output of SDPA
     """
-    raise NotImplementedError
+    from cs336_basics.transformer import scaled_dot_product_attention
+    
+    return scaled_dot_product_attention(Q, K, V, mask)
 
 
 def run_multihead_self_attention(
@@ -212,7 +222,8 @@ def run_rope(
     Returns:
         Float[Tensor, " ... sequence_length d_k"]: Tensor with RoPEd input.
     """
-    raise NotImplementedError
+    rope = RotaryPositionalEmbedding(theta, d_k, max_seq_len)
+    return rope.forward(in_query_or_key, token_positions)
 
 
 def run_transformer_block(
@@ -449,7 +460,9 @@ def run_softmax(in_features: Float[Tensor, " ..."], dim: int) -> Float[Tensor, "
         Float[Tensor, "..."]: Tensor of with the same shape as `in_features` with the output of
         softmax normalizing the specified `dim`.
     """
-    raise NotImplementedError
+    from cs336_basics.transformer import softmax
+
+    return softmax(in_features, dim)
 
 
 def run_cross_entropy(
