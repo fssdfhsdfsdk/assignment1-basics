@@ -10,7 +10,7 @@
         "args": [
           // "tests/test_train_bpe.py::test_train_bpe",
           "-k",
-          "test_embedding",
+          "test_transformer_block",
           "-v",
           "-s"
         ],

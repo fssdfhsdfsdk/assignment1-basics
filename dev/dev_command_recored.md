@@ -15,6 +15,12 @@ uv run pytest -k test_softmax_matches_pytorch
 uv run pytest -k test_scaled_dot_product_attention
 uv run pytest -k test_4d_scaled_dot_product_attention
 uv run pytest -k test_multihead_self_attention
+  uv run pytest tests/test_model.py::test_multihead_self_attention
+  uv run pytest tests/test_model.py::test_multihead_self_attention_with_rope
+uv run pytest -k test_transformer_block
+uv run pytest -k test_transformer_lm
+  uv run pytest tests/test_model.py::test_transformer_lm
+  uv run pytest tests/test_model.py::test_transformer_lm_truncated_input
 ```
 
 
