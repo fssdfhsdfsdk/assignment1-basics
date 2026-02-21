@@ -21,6 +21,12 @@ uv run pytest -k test_transformer_block
 uv run pytest -k test_transformer_lm
   uv run pytest tests/test_model.py::test_transformer_lm
   uv run pytest tests/test_model.py::test_transformer_lm_truncated_input
+
+===
+uv run pytest -k test_cross_entropy
+uv run pytest -k test_adamw
+uv run pytest -k test_get_lr_cosine_schedule
+uv run pytest -k test_gradient_clipping
 ```
 
 

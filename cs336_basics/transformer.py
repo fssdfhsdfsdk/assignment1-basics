@@ -113,7 +113,7 @@ class FNN(nn.Module):
         self.w3 = Linear(d_model, self.d_ff, device, dtype)
 
     def forward(self, x:torch.Tensor) -> torch.Tensor:
-        return self.w2.forward(silu(self.w1.forward(x)) *self.w3.forward(x))
+        return self.w2(silu(self.w1(x)) * self.w3(x))
 
 
 class RotaryPositionalEmbedding(nn.Module):
@@ -244,24 +244,24 @@ class MHA(nn.Module):
 
         seq_len = x.shape[-2]
 
-        Q = self.wq.forward(x)
-        K = self.wk.forward(x)
-        V = self.wv.forward(x)
+        Q = self.wq(x)
+        K = self.wk(x)
+        V = self.wv(x)
 
         QMha = rearrange(Q, "... sequence_length (h dk) -> ... h sequence_length dk", h=self.num_heads)
         KMha = rearrange(K, "... sequence_length (h dk) -> ... h sequence_length dk", h=self.num_heads)
         VMha = rearrange(V, "... sequence_length (h dv) -> ... h sequence_length dv", h=self.num_heads)
 
         if token_positions is not None:
-            QMha = self.rope.forward(QMha, token_positions)
-            KMha = self.rope.forward(KMha, token_positions)
+            QMha = self.rope(QMha, token_positions)
+            KMha = self.rope(KMha, token_positions)
 
         MhaAttention = scaled_dot_product_attention(QMha, KMha, VMha, 
                                                     self._create_causal_mask(seq_len, self.device))
         MhaAttention = rearrange(MhaAttention, 
                                  "... h sequence_length dv -> ... sequence_length (h dv)", 
                                  h=self.num_heads)
-        return self.wo.forward(MhaAttention)
+        return self.wo(MhaAttention)
 
 
 class TransformerBlock(nn.Module):
@@ -290,7 +290,7 @@ class TransformerBlock(nn.Module):
 
         y = x + self.mha(self.rmsnorm_mha(x), self.token_positions[: x.shape[-2]])
         return y + self.fnn(self.rmsnorm_fnn(y))
-    
+
 
 class TransformerLM(nn.Module):
 
