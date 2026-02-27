@@ -10,18 +10,27 @@ import math
 
 # 配置参数
 vocab_size = 50257
-context_length_1k = 1024
-context_length_16k = 16384
 num_layers = 48
 d_model =  1600
 num_heads = 25
 d_ff = 6400  # SwiGLU
 
 
+context_length_1k = 1024
+context_length_16k = 16384
+context_length=context_length_1k
+
+vocab_size=10000
+d_model=512
+d_ff=1344
+num_layers=4
+num_heads=16
+context_length=256
+
 def compute_transformer_memory(
     # Model hyperparameters
     vocab_size=vocab_size,
-    context_length=context_length_1k,
+    context_length=context_length,
     num_layers=num_layers,
     d_model=d_model,
     num_heads=num_heads,
@@ -156,12 +165,12 @@ def print_summary(a, b, max_bs, results, limit_gb=80):
 if __name__ == "__main__":
     # GPT-2 XL hyperparameters
     a, b, max_bs, res = compute_transformer_memory(
-        vocab_size=50257,
-        context_length=1024, 
-        num_layers=48,
-        d_model=1600,
-        num_heads=25,
-        d_ff=6400,
+        vocab_size=vocab_size,
+        context_length=context_length, 
+        num_layers=num_layers,
+        d_model=d_model,
+        num_heads=num_heads,
+        d_ff=d_ff,
         memory_limit_gb=80
     )
     

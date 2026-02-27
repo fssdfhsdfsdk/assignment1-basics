@@ -4,10 +4,16 @@
 ```
 uv run pytest 
 uv run pytest tests/test_train_bpe.py
+  pytest tests/test_train_bpe.py::test_train_bpe
+uv run pytest tests/test_tokenizer.py
+  python -m pstats profile_output.prof
+    - `sort cumtime`：按**累积时间**排序（最常用，能看到包含子函数在内的总耗时）。
+    - `stats 10`：列出耗时前 10 名的函数。
 
+===
 uv run pytest tests/test_model.py::test_linear
 uv run pytest tests/test_model.py::test_embedding
-
+  
 pytest -k test_rmsnorm
 uv run pytest -k test_swiglu
 uv run pytest -k test_rope

@@ -240,7 +240,9 @@ def run_rope(
         Float[Tensor, " ... sequence_length d_k"]: Tensor with RoPEd input.
     """
     rope = RotaryPositionalEmbedding(theta, d_k, max_seq_len)
-    return rope.forward(in_query_or_key, token_positions)
+    
+    ret = rope.forward(in_query_or_key, token_positions)
+    return ret
 
 
 def run_transformer_block(
@@ -675,4 +677,5 @@ def run_train_bpe(
                 representing that <token1> was merged with <token2>.
                 Merges are ordered by order of creation.
     """
+    
     return train_bpe(input_path, vocab_size, special_tokens)

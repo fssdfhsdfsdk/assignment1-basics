@@ -1,4 +1,5 @@
 import os
+import time
 import typing
 
 import numpy as np
@@ -105,29 +106,35 @@ class TrainConfig:
     eps_adam:float=10e-8
 
     # lr schedule
-    max_learning_rate: float
-    min_learning_rate: float
-    warmup_iters: int
-    cosine_cycle_iters: int
+    max_learning_rate: float = 3e-4
+    min_learning_rate: float = 3e-5
+    # warmup_iters: int
+    # cosine_cycle_iters: int
 
     # grid clip
-    max_l2_norm: float
+    max_l2_norm: float = 1.0 # ?
     eps_clip: float= 1e-6
 
     # train
     batch_size:int
     dtype: torch.dtype | None = None
     device:torch.device | None = None
-    token_ids_path:str|os.PathLike|typing.BinaryIO|typing.IO[bytes]
+    token_ids_path:str|os.PathLike|typing.BinaryIO|typing.IO[bytes] = None
 
+    dataset_dir: str = "datasets/tiny_stories"
+    train_data_path: str = "datasets/tiny_stories/train.bin"
+    eval_data_path: str = "datasets/tiny_stories/eval.bin"
 
     # checkpoint
-    save_checkpoint_per_steps:int
+    save_checkpoint_per_steps:int = 10
     save_checkpoint_dir:str|os.PathLike|typing.BinaryIO|typing.IO[bytes] = "checkpoints"
 
     # wandb
     wandb_project:str="cs336"
     wandb_name:str="my_first_llm"
+    
+    # timing
+    timing_interval_steps:int = 1  # 打印时间信息的间隔步数
 
 
 def train(config: TrainConfig):
@@ -148,8 +155,17 @@ def train(config: TrainConfig):
 
     optimizer = AdamW(lm.parameters(), lr=config.lr, weight_decay=config.weight_decay, 
                       betas=config.betas, eps=config.eps_adam)
-    
-    token_ids = np.load(config.token_ids_path, mmap_mode="r")
+
+    # Load training dataset
+    original_data = np.memmap(
+        config.train_data_path,
+        dtype=np.uint16,
+        mode="r+",
+    )
+    token_ids = torch.from_numpy(original_data)
+    # token_ids = np.load(config.train_data_path, allow_pickle=True, mmap_mode="r")
+
+
     one_step_len = config.context_length * config.batch_size
     total_steps = len(token_ids) // one_step_len
 
@@ -159,28 +175,59 @@ def train(config: TrainConfig):
                name=config.wandb_name,
                config={**asdict(config), "total_steps": total_steps})
 
+    timing_interval = config.timing_interval_steps
     
     for step in range(total_steps):
+        step_start_time = time.perf_counter()
+        
+        # 数据加载
         inputs, targets = get_batch(token_ids, batch_size, context_length, device)
+        
+        # 前向传播
+        forward_start = time.perf_counter()
         logits = lm.forward(inputs)
-        loss = cross_entropy(logits, targets)
+        forward_time = time.perf_counter() - forward_start
+        
+        # 损失计算
+        loss_start = time.perf_counter()
+        loss = cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
+        loss_time = time.perf_counter() - loss_start
 
         optimizer.zero_grad()
+        
+        # 反向传播
+        backward_start = time.perf_counter()
         loss.backward()
+        backward_time = time.perf_counter() - backward_start
+        
         gradient_clipping(lm.parameters(), config.max_l2_norm, config.eps_clip)
 
         for params in optimizer.param_groups:
             lr = get_lr_cosine_schedule(step, config.max_learning_rate, 
-                                        config.min_learning_rate, config.warmup_iters,
-                                        config.cosine_cycle_iters)
+                                        config.min_learning_rate,
+                                        warmup_iters=total_steps // 10,
+                                        cosine_cycle_iters=total_steps)
             params["lr"] = lr
+        
+        # 优化器步骤
+        optimizer_start = time.perf_counter()
         optimizer.step()
+        optimizer_time = time.perf_counter() - optimizer_start
+
+        step_end_time = time.perf_counter()
+        step_time = step_end_time - step_start_time
 
         wandb.log({
             "train/loss": loss.item(),
             "train/perplexity": torch.exp(loss).item(),
-            "train/lr": lr
+            "train/lr": lr,
         })
+        
+        if (step + 1) % timing_interval == 0:
+            print(f"Step {step + 1}/{total_steps} - Total: {step_time:.2f}s | "
+                  f"Forward: {forward_time:.2f}s |"
+                  f"Backward: {backward_time:.2f}s | Optim: {optimizer_time:.2f}s |"
+                  f"Loss: {loss.item(): .2f}")
 
 
     wandb.finish()

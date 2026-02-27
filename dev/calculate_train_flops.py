@@ -296,12 +296,12 @@ def main():
     
     # ===== CONFIGURATION =====
     model_cfg = ModelConfig(
-        vocab_size=50257,
-        context_length=1024,  # Will be overridden below
-        num_layers=48,
-        d_model=1600,
-        num_heads=25,
-        d_ff=6400  # SwiGLU: 4 × d_model
+        vocab_size=10000,
+        context_length=256,  # Will be overridden below
+        num_layers=4,
+        d_model=512,
+        num_heads=16,
+        d_ff=1344  # SwiGLU: 4 × d_model
     )
     
     compute_cfg = ComputeConfig(
@@ -311,14 +311,14 @@ def main():
         adamw_flops_per_param=8.0
     )
     
-    batch_size = 1024  # Symbolic: results scale linearly with B
+    batch_size = 256  # Symbolic: results scale linearly with B
         
     print(f"\n" + "="*70)
     print("NUMERICAL RESULTS")
     print("="*70)
     
     # Analyze for different context lengths
-    for ctx_name, ctx_len in [("1K", 1024)]:
+    for ctx_name, ctx_len in [("256", 256)]:
         model_cfg.context_length = ctx_len
         calculator = TransformerFLOPsCalculator(model_cfg, compute_cfg)
         

@@ -7,6 +7,10 @@ V, S, L, D, H, Dff = 50257, 1024, 48, 1600, 25, 6400
 batch_size = 1024
 steps = 400_000
 
+V, S, L, D, H, Dff = 10000, 256, 4, 512, 16, 1344
+batch_size = 256
+steps = 10_000
+
 # Hardware specs
 A100_peak_tflops = 19.5  # FP32 TFLOPs/s
 mfu = 0.5  # 50% model FLOPs utilization
