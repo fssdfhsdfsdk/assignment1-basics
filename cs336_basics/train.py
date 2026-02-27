@@ -97,7 +97,6 @@ class TrainConfig:
     context_length:int
     num_layers:int
     rope_theta:float|None = 10000.0
-    max_seq_len: int|None = None
 
     # optimizer
     lr:float=1e-3

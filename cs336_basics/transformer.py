@@ -303,7 +303,7 @@ class TransformerLM(nn.Module):
         self.tb_layers = nn.ModuleList([TransformerBlock(config.d_model, 
                                                  config.num_heads, 
                                                  config.d_ff,
-                                                 config.max_seq_len,
+                                                 config.context_length,
                                                  config.rope_theta) for _ in range(config.num_layers)])
         self.final_norm = RMSNorm(config.d_model)
         self.output_embedding = Linear(config.d_model, config.vocab_size)
