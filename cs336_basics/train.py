@@ -11,6 +11,7 @@ from dataclasses import dataclass, asdict
 
 from cs336_basics.transformer import TransformerLM, ModelConfig
 from cs336_basics.optimizer import cross_entropy, AdamW, get_lr_cosine_schedule, gradient_clipping
+from cs336_basics.generate import Generator
 
 from dotenv import load_dotenv
 
@@ -124,6 +125,9 @@ class TrainConfig:
     train_data_path: str = "datasets/tiny_stories/train.bin"
     eval_data_path: str = "datasets/tiny_stories/eval.bin"
 
+    tokenizer_vocab_pkl_path: str = "../data/train_bpe_vocab.pkl"
+    tokenizer_merge_pkl_path: str = "../data/train_bpe_merges.pkl"
+
     # checkpoint
     save_checkpoint_per_steps:int = 10
     save_checkpoint_dir:str|os.PathLike|typing.BinaryIO|typing.IO[bytes] = "checkpoints"
@@ -132,8 +136,9 @@ class TrainConfig:
     wandb_project:str="cs336"
     wandb_name:str="my_first_llm"
     
-    # timing
+    # test
     timing_interval_steps:int = 1  # 打印时间信息的间隔步数
+    test_generate_output_interval_steps: int = 10
 
 
 def train(config: TrainConfig):
@@ -147,6 +152,8 @@ def train(config: TrainConfig):
         rope_theta=config.rope_theta
     )
     lm = TransformerLM(modelConfig)
+    generator = Generator(config.context_length, config.tokenizer_vocab_pkl_path,
+                           config.tokenizer_merge_pkl_path)
 
     batch_size = config.batch_size
     context_length = config.context_length
@@ -227,8 +234,12 @@ def train(config: TrainConfig):
                   f"Forward: {forward_time:.2f}s |"
                   f"Backward: {backward_time:.2f}s | Optim: {optimizer_time:.2f}s |"
                   f"Loss: {loss.item(): .2f}")
-
-
+        if (step + 1) % config.test_generate_output_interval_steps == 0:
+            res = generator.generate_from_prompt("Once upon a time", lm, config.device)
+            print("prompt: ", "Once upon a time")
+            print("Answer: ", res)
+            print("Gen-length: ", len(res))
+            
     wandb.finish()
 
 
