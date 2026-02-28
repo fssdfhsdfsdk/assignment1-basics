@@ -122,7 +122,7 @@ class TrainConfig:
     token_ids_path:str|os.PathLike|typing.BinaryIO|typing.IO[bytes] = None
 
     dataset_dir: str = "datasets/tiny_stories"
-    train_data_path: str = "datasets/tiny_stories/train.bin"
+    train_data_path: str = "train_token_ids.npy"
     eval_data_path: str = "datasets/tiny_stories/eval.bin"
 
     tokenizer_vocab_pkl_path: str = "../data/train_bpe_vocab.pkl"
@@ -163,13 +163,13 @@ def train(config: TrainConfig):
                       betas=config.betas, eps=config.eps_adam)
 
     # Load training dataset
-    original_data = np.memmap(
-        config.train_data_path,
-        dtype=np.uint16,
-        mode="r+",
-    )
-    token_ids = torch.from_numpy(original_data)
-    # token_ids = np.load(config.train_data_path, allow_pickle=True, mmap_mode="r")
+    # original_data = np.memmap(
+    #     config.train_data_path,
+    #     dtype=np.uint16,
+    #     mode="r+",
+    # )
+    # token_ids = torch.from_numpy(original_data)
+    token_ids = np.load(config.train_data_path, allow_pickle=True, mmap_mode="r")
 
 
     one_step_len = config.context_length * config.batch_size
@@ -239,7 +239,7 @@ def train(config: TrainConfig):
             print("prompt: ", "Once upon a time")
             print("Answer: ", res)
             print("Gen-length: ", len(res))
-            
+
     wandb.finish()
 
 
@@ -251,7 +251,7 @@ tinyStoryConfig = TrainConfig(
     num_heads=16,
     context_length=256,
 
-    batch_size=16, #256 
+    batch_size=64, #256 
     dtype=torch.float32,
     device=torch.device("cpu")
 )

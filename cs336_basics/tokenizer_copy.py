@@ -171,14 +171,14 @@ if __name__ == "__main__":
     import tqdm
 
     tokenizer = Tokenizer.from_files(
-        "../data/owt_train/bpe_vocab.pkl",
-        "../data/owt_train/bpe_merges.pkl",
+        "../data/train_bpe_vocab.pkl",
+        "../data/train_bpe_merges.pkl",
         special_tokens=["<|endoftext|>"],
     )
 
     token_ids_buf = array.array("H")
 
-    file_path = "../data/owt_train.txt"
+    file_path = "../data/TinyStoriesV2-GPT4-train.txt"
     with open(file_path, "r") as f:
         f.seek(0, os.SEEK_END)
         bytes_len = f.tell()

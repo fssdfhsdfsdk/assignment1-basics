@@ -239,17 +239,17 @@ if __name__ == "__main__":
     #     "../tests/fixtures/corpus.en", 256 + 1 + 6, ["<|endoftext|>"]
     # )
     vocab, merges = train_bpe(
-        "../data/TinyStoriesV2-GPT4-train.txt.txt", 10000, ["<|endoftext|>"]
+        "../data/TinyStoriesV2-GPT4-train.txt", 10000, ["<|endoftext|>"]
     )
-    with open("bpe_vocab.txt", "w", encoding="utf-8") as f:
+    with open("../data/train_bpe_vocab.txt", "w", encoding="utf-8") as f:
         for i, tok in vocab.items():
             f.write(f"{i}\t{tok}\n")
-    with open("bpe_merges.txt", "w", encoding="utf-8") as f:
+    with open("../data/train_bpe_merges.txt", "w", encoding="utf-8") as f:
         for left, right in merges:
             f.write(f"{left} {right}\n")
-    with open("bpe_vocab.pkl", "wb") as f:
+    with open("../data/train_bpe_vocab.pkl", "wb") as f:
         pickle.dump(vocab, f)
-    with open("bpe_merges.pkl", "wb") as f:
+    with open("../data/train_bpe_merges.pkl", "wb") as f:
         pickle.dump(merges, f)
     # print("Vocab:")
     # for i, tok in vocab.items():
