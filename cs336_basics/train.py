@@ -220,6 +220,7 @@ def train(config: TrainConfig):
 
     timing_interval = config.timing_interval_steps
     best_eval_loss = float("inf")
+    os.makedirs(os.path.join(config.save_checkpoint_dir, config.model_name), exist_ok=True)
     
     for step in range(total_steps):
         step_start_time = time.perf_counter()
@@ -233,9 +234,7 @@ def train(config: TrainConfig):
         forward_time = time.perf_counter() - forward_start
         
         # 损失计算
-        loss_start = time.perf_counter()
         loss = cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
-        loss_time = time.perf_counter() - loss_start
 
         optimizer.zero_grad()
         
@@ -272,7 +271,7 @@ def train(config: TrainConfig):
               (step + 1) % config.eval_then_save_checkpoint_per_steps == 0:
             
             eval_start = time.perf_counter()
-            del inputs, targets, logits, loss
+            del inputs, targets, logits
             gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.ipc_collect()
@@ -287,7 +286,7 @@ def train(config: TrainConfig):
                 out_path = os.path.join(
                     config.save_checkpoint_dir,
                     config.model_name,
-                    f"eval_loss_{eval_loss: .2f}_step_{step + 1}.pt",
+                    f"eval_loss_{str(eval_loss)}_step_{step + 1}.pt",
                 )
                 save_checkpoint(lm, optimizer, iteration=step+1, out=out_path)
             

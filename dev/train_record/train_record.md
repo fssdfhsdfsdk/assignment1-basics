@@ -33,3 +33,12 @@ Step 20/33033 - Total: 13.71s | Forward: 4.09s |Backward: 9.48s | Optim: 0.01s |
 Step 21/33033 - Total: 14.08s | Forward: 4.09s |Backward: 9.79s | Optim: 0.09s |Loss:  9.21
 Step 22/33033 - Total: 13.81s | Forward: 3.95s |Backward: 9.60s | Optim: 0.01s |Loss:  9.21
 ```
+
+
+Eval:
+
+```
+Eval steps: 10, one stpe len: 16384, all token len: 5465882
+New best eval loss: 9.2626
+Step 5/33033 - Eval and save checkpoint: 54.25s | 
+```

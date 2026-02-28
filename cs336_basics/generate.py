@@ -14,7 +14,7 @@ class Generator:
         self.context_length = context_length
 
     def default_gen(self, prompt: str, model:TransformerLM, device: str | torch.device):
-        res, token_count = self.generate_from_prompt(prompt, lm, config.device)
+        res, token_count = self.generate_from_prompt(prompt, model, config.device)
         print("prompt: ", prompt)
         print("Answer: ", res)
         print("Gen-length: ", len(res), ", Token Count: ", token_count)
