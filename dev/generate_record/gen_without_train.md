@@ -1,0 +1,8 @@
+
+
+```
+(cs336-basics) ➜  cs336_basics git:(main) ✗ python generate.py 
+prompt:  Once upon a time
+Answer:  cil Bobby swimsuit playroom Tiabe� wiping soakedna knighthead map Hop tantrumasureiers Stayised empty pad printed pearls insp theater chicks chew step plants Dragon sprink Mic — pointoughoe Shark crystal friendly scru Karenyard losing rhindam clerkomes modern spillction Kate pillBow budgeJenny Hippyilo aliens hairPapa either� quieter sniffingnet Katy merma sweaty evening Finnyort Thankslies backedcomfortable fruits glowing gloomyents rider clear astronaut fountaincept twisted focus thief honestight celebrJerry hunter gri shirts lungsirts yoga high finish married sorRemy grassy igloo troublend days EacheyEach Jerry sight cone closSee� tricycle than killed dressed beautifully butornadchairising leader village costume letterrophone slipping lump puppets hockey shoutingipp cras weaker giggle talents hoo glimmering brand Wiggly scarf sensation hooks Sp modelch conngingkins net wa mysteries� slithered fireworks shelves cheaper microscope foam solvingieldThank possess sternlyried amazed swim hotter encores unfortunately manners_rian extra competehnyirudyseum rebuild igloo uniform balloon copsobody bowlsRocky oil does Millie twoRobbie twirled Other gall agreually playhouse Bu choocesseen pajamas skullctop vend fishermanoey Ruby shrugged rinsed arrows Cars Whee disagre carries generOkayillie cutter Poor brighterariJeffTheir bluescape shapes mommypect beads rail faith roadknBehindNeverMon glitter Super bored spies Ralph
+Gen-length:  1436 , Token Count:  252
+```

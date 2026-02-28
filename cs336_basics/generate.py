@@ -3,7 +3,7 @@ import os
 from cs336_basics.tokenizer_copy import Tokenizer
 from cs336_basics.transformer import TransformerLM, softmax
 import torch
-
+from typing import Tuple
 
 class Generator:
     def __init__(self, context_length:int, 
@@ -12,11 +12,17 @@ class Generator:
             Tokenizer.from_files(vocab_path, merge_rank_path, special_tokens=["<|endoftext|>"])
         self.end_token_id = self.tokenizer.encode("<|endoftext|>")[0]
         self.context_length = context_length
+
+    def default_gen(self, prompt: str, model:TransformerLM, device: str | torch.device):
+        res, token_count = self.generate_from_prompt(prompt, lm, config.device)
+        print("prompt: ", prompt)
+        print("Answer: ", res)
+        print("Gen-length: ", len(res), ", Token Count: ", token_count)
         
     def generate_from_prompt(self, prompt: str, model:TransformerLM, 
                              device: str | torch.device,
                              tempeerature:float=0.7,
-                              top_p:float=0.9, max_token_num:int=0) -> str:
+                              top_p:float=0.9, max_token_num:int=0) -> Tuple[str, int]:
         token_ids_list = self.tokenizer.encode(prompt)
         input_token_len = len(token_ids_list)
         max_generate_support = self.context_length - input_token_len
@@ -39,11 +45,15 @@ class Generator:
                 if next_token.item() == self.end_token_id: # int类型
                     break
                 # next_token 形状通常是 [1] 或 []，需要变为 [1, 1] 才能 cat 到 [1, seq]
-                next_token = next_token.unsqueeze(0).unsqueeze(0) 
+                next_token = next_token.unsqueeze(0)
+                # RuntimeError: Tensors must have same number of dimensions: got 2 and 3
+                # next_token unsqueeze 1次
                 token_ids = torch.cat((token_ids, next_token), dim=-1)
 
-        gen_token_list = token_ids[0, input_token_len:].cpu().tolist()
-        return self.tokenizer.decode(gen_token_list)
+        gen_tokens = token_ids[0, input_token_len:]
+        token_count = len(gen_tokens)
+        gen_token_list = gen_tokens.cpu().tolist()
+        return self.tokenizer.decode(gen_token_list), token_count
         
 
     def sample_by_top_p(self, logits:torch.Tensor, temperature:float=0.7, top_p:float=0.9) -> torch.Tensor:
@@ -93,16 +103,15 @@ if __name__ == "__main__":
     generator = Generator(config.context_length, config.tokenizer_vocab_pkl_path,
                            config.tokenizer_merge_pkl_path)
     
-    checkpoint = torch.load(
-        "../checkpoints/checkpoint_final.pt",
-        map_location=config["device"],
-    )
+    # 可以直接使用 未训练过的随机初始化模型
+    if False:
+        checkpoint = torch.load(
+            "../checkpoints/checkpoint_final.pt",
+            map_location=config["device"],
+        )
 
-    lm.load_state_dict(checkpoint["model"])
+        lm.load_state_dict(checkpoint["model"])
     lm.eval()
 
     prompt = "Once upon a time"
-    res = generator.generate_from_prompt(prompt, lm, config.device)
-    print("prompt: ", prompt)
-    print("Answer: ", res)
-    print("Gen-length: ", len(res))
+    generator.default_gen(prompt, lm, config.device)

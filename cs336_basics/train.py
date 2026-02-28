@@ -1,6 +1,7 @@
 import os
 import time
 import typing
+import gc
 
 import numpy as np
 import numpy.typing as npt
@@ -123,14 +124,16 @@ class TrainConfig:
 
     dataset_dir: str = "datasets/tiny_stories"
     train_data_path: str = "train_token_ids.npy"
-    eval_data_path: str = "datasets/tiny_stories/eval.bin"
+    eval_data_path: str = "eval_token_ids.npy"
 
     tokenizer_vocab_pkl_path: str = "../data/train_bpe_vocab.pkl"
     tokenizer_merge_pkl_path: str = "../data/train_bpe_merges.pkl"
 
     # checkpoint
+    model_name:str = "my_first_llm"
     save_checkpoint_per_steps:int = 10
     save_checkpoint_dir:str|os.PathLike|typing.BinaryIO|typing.IO[bytes] = "checkpoints"
+    eval_then_save_checkpoint_per_steps:int = 5
 
     # wandb
     wandb_project:str="cs336"
@@ -139,6 +142,36 @@ class TrainConfig:
     # test
     timing_interval_steps:int = 1  # 打印时间信息的间隔步数
     test_generate_output_interval_steps: int = 10
+
+
+@torch.no_grad()
+def eval_model(lm: TransformerLM, config:TrainConfig) -> float:
+    lm.eval()
+    eval_loss = 0.0
+    token_ids = np.load(config.train_data_path, allow_pickle=True, mmap_mode="r")
+    
+    device = config.device
+    batch_size = config.batch_size
+    context_length = config.context_length 
+    one_step_len = context_length * config.batch_size
+    total_steps = len(token_ids) // one_step_len
+
+    print(f"Eval steps: {total_steps}, one stpe len: {one_step_len}, all token len: {len(token_ids)}")
+    with torch.no_grad():
+        for i in range(total_steps):
+            # 数据加载
+            inputs, targets = get_batch(token_ids, batch_size, context_length, device)
+            
+            # 前向传播
+            logits = lm.forward(inputs)
+            
+            # 损失计算
+            loss = cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
+            eval_loss += loss.item()
+    lm.train()
+
+    return eval_loss / total_steps
+
 
 
 def train(config: TrainConfig):
@@ -182,6 +215,7 @@ def train(config: TrainConfig):
                config={**asdict(config), "total_steps": total_steps})
 
     timing_interval = config.timing_interval_steps
+    best_eval_loss = float("inf")
     
     for step in range(total_steps):
         step_start_time = time.perf_counter()
@@ -223,22 +257,44 @@ def train(config: TrainConfig):
         step_end_time = time.perf_counter()
         step_time = step_end_time - step_start_time
 
-        wandb.log({
+        log_dc = {
             "train/loss": loss.item(),
             "train/perplexity": torch.exp(loss).item(),
             "train/lr": lr,
-        })
+        }
+        
+
+        if config.eval_then_save_checkpoint_per_steps > 0 and\
+              (step + 1) % config.eval_then_save_checkpoint_per_steps == 0:
+            
+            del inputs, targets, logits, loss
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.ipc_collect()
+                torch.cuda.empty_cache()
+
+            eval_loss = eval_model(lm, config)
+            log_dc["eval/loss"] = eval_loss
+
+            if eval_loss < best_eval_loss:
+                best_eval_loss = eval_loss
+                print(f"New best eval loss: {best_eval_loss:.4f}")
+                out_path = os.path.join(
+                    config.save_checkpoint_dir,
+                    config.model_name,
+                    f"eval_loss_{eval_loss: .2f}_step_{step + 1}.pt",
+                )
+                save_checkpoint(lm, optimizer, iteration=step+1, out=out_path)
         
         if (step + 1) % timing_interval == 0:
             print(f"Step {step + 1}/{total_steps} - Total: {step_time:.2f}s | "
                   f"Forward: {forward_time:.2f}s |"
                   f"Backward: {backward_time:.2f}s | Optim: {optimizer_time:.2f}s |"
-                  f"Loss: {loss.item(): .2f}")
+                  f"Loss: {loss.item(): .2f} | eval: {best_eval_loss: .2f}")
         if (step + 1) % config.test_generate_output_interval_steps == 0:
-            res = generator.generate_from_prompt("Once upon a time", lm, config.device)
-            print("prompt: ", "Once upon a time")
-            print("Answer: ", res)
-            print("Gen-length: ", len(res))
+            generator.default_gen("Once upon a time", lm, config.device)
+        
+        wandb.log(log_dc)
 
     wandb.finish()
 
