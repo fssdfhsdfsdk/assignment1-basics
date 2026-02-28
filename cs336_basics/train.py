@@ -134,6 +134,7 @@ class TrainConfig:
     save_checkpoint_per_steps:int = 10
     save_checkpoint_dir:str|os.PathLike|typing.BinaryIO|typing.IO[bytes] = "checkpoints"
     eval_then_save_checkpoint_per_steps:int = 5
+    eval_max_steps:int = 10
 
     # wandb
     wandb_project:str="cs336"
@@ -148,13 +149,16 @@ class TrainConfig:
 def eval_model(lm: TransformerLM, config:TrainConfig) -> float:
     lm.eval()
     eval_loss = 0.0
-    token_ids = np.load(config.train_data_path, allow_pickle=True, mmap_mode="r")
+    token_ids = np.load(config.eval_data_path, allow_pickle=True, mmap_mode="r")
     
     device = config.device
     batch_size = config.batch_size
     context_length = config.context_length 
     one_step_len = context_length * config.batch_size
-    total_steps = len(token_ids) // one_step_len
+    if config.eval_max_steps > 0:
+        total_steps = config.eval_max_steps
+    else:
+        total_steps = len(token_ids) // one_step_len
 
     print(f"Eval steps: {total_steps}, one stpe len: {one_step_len}, all token len: {len(token_ids)}")
     with torch.no_grad():
