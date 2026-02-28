@@ -267,6 +267,7 @@ def train(config: TrainConfig):
         if config.eval_then_save_checkpoint_per_steps > 0 and\
               (step + 1) % config.eval_then_save_checkpoint_per_steps == 0:
             
+            eval_start = time.perf_counter()
             del inputs, targets, logits, loss
             gc.collect()
             if torch.cuda.is_available():
@@ -285,6 +286,9 @@ def train(config: TrainConfig):
                     f"eval_loss_{eval_loss: .2f}_step_{step + 1}.pt",
                 )
                 save_checkpoint(lm, optimizer, iteration=step+1, out=out_path)
+            
+            eval_time = time.perf_counter() - eval_start
+            print(f"Step {step + 1}/{total_steps} - Eval and save checkpoint: {eval_time:.2f}s | ")
         
         if (step + 1) % timing_interval == 0:
             print(f"Step {step + 1}/{total_steps} - Total: {step_time:.2f}s | "
@@ -292,8 +296,10 @@ def train(config: TrainConfig):
                   f"Backward: {backward_time:.2f}s | Optim: {optimizer_time:.2f}s |"
                   f"Loss: {loss.item(): .2f} | eval: {best_eval_loss: .2f}")
         if (step + 1) % config.test_generate_output_interval_steps == 0:
+            sample_start = time.perf_counter()
             generator.default_gen("Once upon a time", lm, config.device)
-        
+            sample_time = time.perf_counter() - sample_start
+            print(f"Step {step + 1}/{total_steps} - Sample: {sample_time:.2f}s | ")
         wandb.log(log_dc)
 
     wandb.finish()
