@@ -155,10 +155,9 @@ def eval_model(lm: TransformerLM, config:TrainConfig) -> float:
     batch_size = config.batch_size
     context_length = config.context_length 
     one_step_len = context_length * config.batch_size
-    if config.eval_max_steps > 0:
+    total_steps = len(token_ids) // one_step_len
+    if config.eval_max_steps > 0 and config.eval_max_steps < total_steps:
         total_steps = config.eval_max_steps
-    else:
-        total_steps = len(token_ids) // one_step_len
 
     print(f"Eval steps: {total_steps}, one stpe len: {one_step_len}, all token len: {len(token_ids)}")
     with torch.no_grad():

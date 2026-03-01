@@ -98,7 +98,10 @@ if __name__ == "__main__":
         num_layers=config.num_layers,
         rope_theta=config.rope_theta
     )
-    lm = TransformerLM(modelConfig)
+    lm = TransformerLM(modelConfig, device=config.device, dtype=config.dtype)
+    #RuntimeError: Expected all tensors to be on the same device, 
+    # but found at least two devices, cuda:0 and cpu!
+    lm.to(config.device)
 
     generator = Generator(config.context_length, config.tokenizer_vocab_pkl_path,
                            config.tokenizer_merge_pkl_path)
