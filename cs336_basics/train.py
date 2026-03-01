@@ -133,8 +133,8 @@ class TrainConfig:
     model_name:str = "my_first_llm"
     save_checkpoint_per_steps:int = 10
     save_checkpoint_dir:str|os.PathLike|typing.BinaryIO|typing.IO[bytes] = "checkpoints"
-    eval_then_save_checkpoint_per_steps:int = 5
-    eval_max_steps:int = 10
+    eval_then_save_checkpoint_per_steps:int = 1000
+    eval_max_steps:int = 1000
 
     # wandb
     wandb_project:str="cs336"
@@ -142,7 +142,7 @@ class TrainConfig:
     
     # test
     timing_interval_steps:int = 1  # 打印时间信息的间隔步数
-    test_generate_output_interval_steps: int = 10
+    test_generate_output_interval_steps: int = 100
 
 
 @torch.no_grad()
@@ -188,7 +188,8 @@ def train(config: TrainConfig):
         num_layers=config.num_layers,
         rope_theta=config.rope_theta
     )
-    lm = TransformerLM(modelConfig)
+    lm = TransformerLM(modelConfig, device=config.device, dtype=config.dtype)
+    lm.to(config.device)
     generator = Generator(config.context_length, config.tokenizer_vocab_pkl_path,
                            config.tokenizer_merge_pkl_path)
 

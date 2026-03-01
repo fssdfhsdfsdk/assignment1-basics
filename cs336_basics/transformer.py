@@ -42,6 +42,7 @@ class Eebedding(nn.Module):
 
         self.num_embeddings = num_embeddings
         self.embedding_dim = embedding_dim
+        self.device = device
 
         wt = torch.empty((num_embeddings, embedding_dim), device=device, dtype=dtype)
         std = torch.sqrt(torch.tensor(2/(num_embeddings+embedding_dim))).item()
@@ -65,6 +66,7 @@ class RMSNorm(nn.Module):
         super().__init__(*args, **kwargs)
         self.d_model = d_model
         self.eps = eps
+        self.device = device
         # [Error record]
         # g = torch.empty(d_model, device=device, dtype=dtype)
         # g = 1 # ⚠️ 灾难性错误！g 从张量变成整数 1
@@ -123,11 +125,12 @@ class RotaryPositionalEmbedding(nn.Module):
 
         self.theta = theta
         self.d_k = d_k
+        self.device = device
         # 无用参数, forward使用广播扩展. 
         # 优化点: 参考V2
         self.max_seq_len = max_seq_len  
 
-        invert = theta ** (-torch.arange(0, d_k/2 , 1)/(d_k/2))
+        invert = theta ** (-torch.arange(0, d_k/2 , 1, device=device)/(d_k/2))
         self.register_buffer("invert", invert, persistent=False)
 
     def _half_rotate(self, x:torch.Tensor) -> torch.Tensor:
@@ -148,14 +151,15 @@ class RotaryPositionalEmbeddingV2(nn.Module):
 
     def __init__(self, theta:float, d_k:int, max_seq_len:int, device=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.device = device
 
         thetas = einsum(
-            torch.arange(max_seq_len),
-            torch.pow(theta, -torch.arange(0, d_k, 2) / d_k),
+            torch.arange(max_seq_len, device=device),
+            torch.pow(theta, -torch.arange(0, d_k, 2, device=device) / d_k),
             "index, theta -> index theta",
         )
-        cos = torch.cos(thetas).to(device)  # max_seq_len d_k/2
-        sin = torch.sin(thetas).to(device)
+        cos = torch.cos(thetas)  # max_seq_len d_k/2
+        sin = torch.sin(thetas)
         self.register_buffer("cos", cos, persistent=False)
         self.register_buffer("sin", sin, persistent=False)
 
@@ -225,8 +229,8 @@ class MHA(nn.Module):
 
         positions = torch.arange(seq_len, device=device)
         rows = positions.unsqueeze(0)
-        colomuns = positions.unsqueeze(1)
-        mask = rows <=  colomuns
+        columns = positions.unsqueeze(1)
+        mask = rows <=  columns
         return mask
 
     def forward(self, x:torch.Tensor, token_positions: torch.Tensor|None) -> torch.Tensor:
@@ -277,8 +281,8 @@ class TransformerBlock(nn.Module):
 
         self.mha = MHA(d_model, num_heads, max_seq_len, theta, device=device, dtype=dtype)
         self.fnn = FNN(d_model, d_ff, device=device, dtype=dtype)
-        self.rmsnorm_mha = RMSNorm(d_model, device=device, dtype=dtype)
-        self.rmsnorm_fnn = RMSNorm(d_model, device=device, dtype=dtype)
+        self.rmsnorm_mha = RMSNorm(d_model, eps=1e-5, device=device, dtype=dtype)
+        self.rmsnorm_fnn = RMSNorm(d_model, eps=1e-5, device=device, dtype=dtype)
 
         self.token_positions = torch.arange(max_seq_len, device=self.device)
 
@@ -294,19 +298,23 @@ class TransformerBlock(nn.Module):
 
 class TransformerLM(nn.Module):
 
-    def __init__(self, config: ModelConfig,*args, **kwargs):
+    def __init__(self, config: ModelConfig, device: torch.device | None = None, dtype: torch.dtype | None = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.embedding = Eebedding(config.vocab_size, config.d_model)
+        self.device = device
+        self.dtype = dtype
+        self.embedding = Eebedding(config.vocab_size, config.d_model, device=device, dtype=dtype)
         self.tb_list = []
         self.config = config
         self.tb_layers = nn.ModuleList([TransformerBlock(config.d_model, 
                                                  config.num_heads, 
                                                  config.d_ff,
                                                  config.context_length,
-                                                 config.rope_theta) for _ in range(config.num_layers)])
-        self.final_norm = RMSNorm(config.d_model)
-        self.output_embedding = Linear(config.d_model, config.vocab_size)
+                                                 config.rope_theta,
+                                                 device=device,
+                                                 dtype=dtype) for _ in range(config.num_layers)])
+        self.final_norm = RMSNorm(config.d_model, eps=1e-5, device=device, dtype=dtype)
+        self.output_embedding = Linear(config.d_model, config.vocab_size, device=device, dtype=dtype)
         # 共享权重-weight tying
         # self.output_embedding.weights = self.embedding.embed_matrix
         

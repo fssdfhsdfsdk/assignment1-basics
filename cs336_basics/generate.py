@@ -14,7 +14,7 @@ class Generator:
         self.context_length = context_length
 
     def default_gen(self, prompt: str, model:TransformerLM, device: str | torch.device):
-        res, token_count = self.generate_from_prompt(prompt, model, config.device)
+        res, token_count = self.generate_from_prompt(prompt, model, device)
         print("prompt: ", prompt)
         print("Answer: ", res)
         print("Gen-length: ", len(res), ", Token Count: ", token_count)
@@ -107,7 +107,7 @@ if __name__ == "__main__":
     if False:
         checkpoint = torch.load(
             "../checkpoints/checkpoint_final.pt",
-            map_location=config["device"],
+            map_location=config.device,
         )
 
         lm.load_state_dict(checkpoint["model"])
